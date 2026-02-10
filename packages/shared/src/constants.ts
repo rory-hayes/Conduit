@@ -1,0 +1,2 @@
+export const REVIEW_CONFIDENCE_THRESHOLD = 0.78;
+export const DRIFT_PAUSE_THRESHOLD = 0.65;

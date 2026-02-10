@@ -1,0 +1,26 @@
+{
+  "name": "worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "node --loader ts-node/esm src/index.ts",
+    "lint": "eslint src tests --max-warnings=0",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@conduit/shared": "workspace:*",
+    "pg": "8.11.3"
+  },
+  "devDependencies": {
+    "@types/node": "20.11.24",
+    "@types/pg": "8.11.2",
+    "eslint": "8.57.0",
+    "pg-mem": "2.1.4",
+    "ts-node": "10.9.2",
+    "typescript": "5.3.3",
+    "vitest": "1.6.0"
+  }
+}
