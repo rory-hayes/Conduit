@@ -26,6 +26,7 @@ export default async function ThreadPage({ params }: ThreadPageProps) {
         ) : (
           <p className="text-amber-300">No deal linked yet.</p>
         )}
+        {detail.pausedByDrift ? <p className="text-amber-300">CRM writes paused due to drift alert.</p> : null}
       </div>
 
       {detail.needsLinkingCandidates.length > 0 ? (

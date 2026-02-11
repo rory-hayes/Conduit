@@ -4,6 +4,8 @@ import { Nav } from '../src/components/Nav';
 import { StatCard } from '../src/components/StatCard';
 import { DealReadinessPanel } from '../src/components/DealReadinessPanel';
 import { DealLinker, triggerLink } from '../src/components/DealLinker';
+import { DriftAlertBanner } from '../src/components/DriftAlertBanner';
+import { RollupViewer } from '../src/components/RollupViewer';
 
 describe('web components', () => {
   it('renders nav links', () => {
@@ -48,6 +50,21 @@ describe('web components', () => {
     expect(html).toContain('Needs Linking');
     expect(html).toContain('Deal 1');
     expect(html).toContain('Link');
+  });
+
+
+  it('renders drift alert banner count and links', () => {
+    const html = renderToStaticMarkup(<DriftAlertBanner openAlerts={3} />);
+    expect(html).toContain('Drift alerts open: 3');
+    expect(html).toContain('/review-queue');
+  });
+
+  it('renders weekly rollup viewer summary', () => {
+    const html = renderToStaticMarkup(
+      <RollupViewer weekStart="2026-01-01" weekEnd="2026-01-07" summaryMd="### What happened this week\n- Event" />
+    );
+    expect(html).toContain('2026-01-01');
+    expect(html).toContain('What happened this week');
   });
 
   it('triggerLink uses callback when provided', async () => {
