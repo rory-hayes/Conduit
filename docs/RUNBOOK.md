@@ -25,3 +25,16 @@
 2. Clear/resolve affected drift alerts.
 3. Set corresponding `write_pause` scope row to `paused=false` with reason note.
 4. Replay queued/reviewed items safely (idempotent CRM keys prevent duplicates).
+
+## LLM Rollups Troubleshooting
+1. **Invalid output errors (`llm_rollup_invalid_output`)**
+   - Inspect `llm_runs.validation_status`, `error_text`, and `output_text`.
+   - Confirm prompt/schema alignment and check for non-JSON wrappers.
+   - Verify fallback path generated deterministic rollup (`generation_method=llm_fallback`).
+2. **Rate limiting / transient provider failures**
+   - Check `llm_rollup_failed` frequency and provider status.
+   - Confirm retry/backoff behavior and consider temporary policy disable (`use_llm_rollups=false`).
+3. **Cost spikes**
+   - Review `llm_tokens_estimated` trend by workspace.
+   - Keep `llm_context_level=structured_only` unless snippet mode is required.
+   - Reduce model or max-token parameters and monitor `llm_latency_ms`.

@@ -74,12 +74,16 @@ export interface WeeklyRollupRow {
   week_start: string;
   week_end: string;
   summary_md: string;
+  highlights_json: { events?: string[]; risks?: string[]; next_actions?: string[] } | null;
+  generation_method: 'deterministic' | 'llm' | 'llm_fallback';
 }
 
 export interface PolicySettingsRow {
   pause_on_drift: boolean;
   write_weekly_rollup_to_crm: boolean;
   create_crm_deltas: boolean;
+  use_llm_rollups: boolean;
+  llm_context_level: 'structured_only' | 'structured_plus_snippets';
 }
 
 export interface ThreadDetail {
@@ -201,7 +205,7 @@ export const getWeeklyRollups = async (): Promise<WeeklyRollupRow[]> => {
   const supabase = createServerClient();
   const { data } = await supabase
     .from('weekly_rollups')
-    .select('id,deal_id,week_start,week_end,summary_md')
+    .select('id,deal_id,week_start,week_end,summary_md,highlights_json,generation_method')
     .order('week_start', { ascending: false })
     .limit(30);
   return data ?? [];
@@ -214,6 +218,9 @@ export const getPolicySettings = async (): Promise<PolicySettingsRow> => {
   return {
     pause_on_drift: policy.pause_on_drift !== false,
     write_weekly_rollup_to_crm: policy.write_weekly_rollup_to_crm === true,
-    create_crm_deltas: policy.create_crm_deltas === true
+    create_crm_deltas: policy.create_crm_deltas === true,
+    use_llm_rollups: policy.use_llm_rollups === true,
+    llm_context_level:
+      policy.llm_context_level === 'structured_plus_snippets' ? 'structured_plus_snippets' : 'structured_only'
   };
 };

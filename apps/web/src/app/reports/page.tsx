@@ -21,6 +21,8 @@ export default async function ReportsPage() {
               weekStart={rollup.week_start}
               weekEnd={rollup.week_end}
               summaryMd={rollup.summary_md}
+              highlights={rollup.highlights_json ?? undefined}
+              generationMethod={rollup.generation_method}
             />
           ))}
         </div>

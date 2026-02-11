@@ -6,6 +6,7 @@ import { DealReadinessPanel } from '../src/components/DealReadinessPanel';
 import { DealLinker, triggerLink } from '../src/components/DealLinker';
 import { DriftAlertBanner } from '../src/components/DriftAlertBanner';
 import { RollupViewer } from '../src/components/RollupViewer';
+import { AIRollupsToggle } from '../src/components/AIRollupsToggle';
 
 describe('web components', () => {
   it('renders nav links', () => {
@@ -59,12 +60,35 @@ describe('web components', () => {
     expect(html).toContain('/review-queue');
   });
 
-  it('renders weekly rollup viewer summary', () => {
+  it('renders weekly rollup viewer summary and highlights', () => {
     const html = renderToStaticMarkup(
-      <RollupViewer weekStart="2026-01-01" weekEnd="2026-01-07" summaryMd="### What happened this week\n- Event" />
+      <RollupViewer
+        weekStart="2026-01-01"
+        weekEnd="2026-01-07"
+        summaryMd="### What happened this week\n- Event"
+        highlights={{ events: ['Event'], risks: ['Risk'], next_actions: ['Action'] }}
+        generationMethod="llm"
+      />
     );
     expect(html).toContain('2026-01-01');
     expect(html).toContain('What happened this week');
+    expect(html).toContain('AI Generated');
+    expect(html).toContain('Next actions');
+  });
+
+  it('renders AI rollups toggle warning and controls', () => {
+    const html = renderToStaticMarkup(
+      <AIRollupsToggle
+        enabled={false}
+        contextLevel="structured_only"
+        onEnabledChange={() => undefined}
+        onContextLevelChange={() => undefined}
+      />
+    );
+
+    expect(html).toContain('AI Rollups send minimized context only');
+    expect(html).toContain('Enable AI-generated weekly rollups');
+    expect(html).toContain('Structured + redacted snippets');
   });
 
   it('triggerLink uses callback when provided', async () => {
