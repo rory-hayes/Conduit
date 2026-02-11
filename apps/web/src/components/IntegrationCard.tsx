@@ -2,7 +2,7 @@
 
 export interface IntegrationCardProps {
   crm: 'hubspot' | 'salesforce';
-  status: 'connected' | 'disconnected' | 'error';
+  status: 'connected' | 'disconnected' | 'error' | 'pending_claim';
   lastCheckedAt?: string | null;
   lastError?: string | null;
   onConnect: () => Promise<void>;
@@ -11,7 +11,7 @@ export interface IntegrationCardProps {
 
 export const IntegrationCard = ({ crm, status, lastCheckedAt, lastError, onConnect, onDisconnect }: IntegrationCardProps) => {
   const title = crm === 'hubspot' ? 'HubSpot' : 'Salesforce';
-  const badgeClass = status === 'connected' ? 'bg-emerald-500/20 text-emerald-200' : status === 'error' ? 'bg-rose-500/20 text-rose-200' : 'bg-slate-500/20 text-slate-200';
+  const badgeClass = status === 'connected' ? 'bg-emerald-500/20 text-emerald-200' : status === 'error' ? 'bg-rose-500/20 text-rose-200' : status === 'pending_claim' ? 'bg-amber-500/20 text-amber-200' : 'bg-slate-500/20 text-slate-200';
 
   return (
     <article className="rounded-lg border border-slate-700 bg-slate-900/40 p-4 space-y-3">

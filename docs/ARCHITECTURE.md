@@ -34,3 +34,13 @@ Web App
 ## Edge vs Worker Boundary
 - Edge function: validate JSON, derive workspace from alias, persist message, enqueue extraction.
 - Worker: extraction parsing, confidence policy decisions, job fanout, CRM write logging.
+
+## V1.4 Marketplace Readiness Hardening
+
+- New operational workers:
+  - `reconcile_connections` (hourly): token/scopes validity checks with connection health writes.
+  - `reconcile_crm_writes` (10m): retries failed/planned CRM writes with bounded backoff.
+  - `purge_retention` (daily): redacts aged raw email/attachments per workspace policy.
+- Install-first control plane:
+  - OAuth callbacks can create pending installs without workspace context.
+  - Claim API binds install + connection into a workspace with audit event.

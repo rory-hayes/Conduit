@@ -26,3 +26,14 @@
 - `DRY_RUN=true` (default): processors only write planned rows to `crm_write_log` and audit events.
 - `DRY_RUN=false`: processors perform real API writes only if valid connected tokens are present.
 - Missing/errored connections fail jobs with actionable errors and keep Conduit as source of truth.
+
+## V1.4 Marketplace Readiness Hardening
+
+- Required env additions for install-first callbacks:
+  - `APP_BASE_URL` must be publicly reachable and stable for redirect to `/claim-install`.
+  - `HUBSPOT_REDIRECT_URI` and `SALESFORCE_REDIRECT_URI` must match marketplace app callback URLs.
+  - Public callback base URL must route to Supabase edge functions for `hubspot-oauth-callback` and `salesforce-oauth-callback`.
+- Required function exposure:
+  - `claim-install`
+  - `disconnect-crm`
+  - `admin-cron` (to enqueue reconcile + purge jobs)

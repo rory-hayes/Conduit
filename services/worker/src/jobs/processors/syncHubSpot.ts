@@ -7,6 +7,21 @@ import { createHubSpotTokenManager } from '../../connectors/hubspot/tokenManager
 
 const isDryRun = () => process.env.DRY_RUN !== 'false';
 
+
+const resolveHubSpotDealAssociation = async (workspaceId: string, threadId: string): Promise<string | null> => {
+  const { rows } = await withClient((client) =>
+    client.query(
+      `SELECT d.crm_deal_id
+       FROM thread_links tl
+       JOIN deals d ON d.id = tl.deal_id
+       WHERE tl.workspace_id = $1 AND tl.thread_id = $2 AND d.crm = 'hubspot'
+       LIMIT 1`,
+      [workspaceId, threadId]
+    )
+  );
+  return rows[0]?.crm_deal_id ? String(rows[0].crm_deal_id) : null;
+};
+
 const upsertCrmWriteLog = async (workspaceId: string, threadId: string, idempotencyKey: string, payload: Record<string, unknown>, status: string) =>
   withClient((client) =>
     client.query(
@@ -60,8 +75,10 @@ export const syncHubSpot: JobProcessor = async ({ job }) => {
   try {
     const contact = await client.upsertContactByEmail(email, { email });
     const contactId = String(contact.record?.id ?? '');
-    const task = await client.createTask({ hs_task_subject: 'Conduit thread sync', hs_timestamp: new Date().toISOString() }, [{ toObjectId: contactId }]);
-    const note = await client.createNote({ hs_note_body: `Weekly deal summary for thread ${threadId}` }, [{ toObjectId: contactId }]);
+    const associatedDealId = await resolveHubSpotDealAssociation(job.workspaceId, threadId);
+    const associations = [{ toObjectId: contactId }, ...(associatedDealId ? [{ toObjectId: associatedDealId }] : [])];
+    const task = await client.createTask({ hs_task_subject: 'Conduit thread sync', hs_timestamp: new Date().toISOString() }, associations);
+    const note = await client.createNote({ hs_note_body: `Weekly deal summary for thread ${threadId}` }, associations);
 
     await withClient((dbClient) =>
       dbClient.query(

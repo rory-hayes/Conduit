@@ -43,25 +43,72 @@ Deno.serve(async (req) => {
   }
 
   const token = await tokenResponse.json();
-  await supabase.from('crm_connections').upsert(
-    {
-      workspace_id: oauthState.workspace_id,
-      crm: 'salesforce',
-      status: 'connected',
-      access_token_ciphertext: await encryptToB64(token.access_token),
-      refresh_token_ciphertext: token.refresh_token ? await encryptToB64(token.refresh_token) : null,
-      token_expires_at: new Date(Date.now() + 30 * 60_000).toISOString(),
-      scopes_json: ['refresh_token', 'api'],
-      external_account_json: {
-        instance_url: token.instance_url,
-        id: token.id
-      },
-      last_checked_at: new Date().toISOString(),
-      last_error: null,
-      updated_at: new Date().toISOString()
+  let orgId: string | null = null;
+  if (token.id) {
+    const identityResponse = await fetch(token.id, { headers: { Authorization: `Bearer ${token.access_token}` } });
+    if (identityResponse.ok) {
+      const identity = await identityResponse.json();
+      orgId = identity.organization_id ?? null;
+    }
+  }
+  const externalAccountKey = String(orgId ?? token.instance_url ?? 'unknown_org');
+
+  const connectionPayload = {
+    workspace_id: oauthState.workspace_id ?? null,
+    crm: 'salesforce',
+    status: oauthState.workspace_id ? 'connected' : 'pending_claim',
+    access_token_ciphertext: await encryptToB64(token.access_token),
+    refresh_token_ciphertext: token.refresh_token ? await encryptToB64(token.refresh_token) : null,
+    token_expires_at: new Date(Date.now() + 30 * 60_000).toISOString(),
+    scopes_json: ['refresh_token', 'api'],
+    external_account_json: {
+      instance_url: token.instance_url,
+      id: token.id,
+      organization_id: orgId
     },
-    { onConflict: 'workspace_id,crm' }
-  );
+    last_checked_at: new Date().toISOString(),
+    last_error: null,
+    updated_at: new Date().toISOString()
+  };
+
+  const { data: connection, error: upsertError } = await supabase.from('crm_connections').upsert(connectionPayload, { onConflict: 'workspace_id,crm' }).select('id').maybeSingle();
+  if (upsertError) return new Response(upsertError.message, { status: 500, headers: corsHeaders });
+
+  if (!oauthState.workspace_id) {
+    const expiresAt = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: existingPending } = await supabase
+      .from('pending_installs')
+      .select('id')
+      .eq('crm', 'salesforce')
+      .eq('external_account_key', externalAccountKey)
+      .eq('status', 'pending')
+      .maybeSingle();
+
+    let installId = existingPending?.id;
+    if (installId) {
+      await supabase
+        .from('pending_installs')
+        .update({ connection_id: connection?.id ?? null, details_json: { instance_url: token.instance_url, organization_id: orgId }, expires_at: expiresAt })
+        .eq('id', installId);
+    } else {
+      const { data: inserted } = await supabase
+        .from('pending_installs')
+        .insert({
+          crm: 'salesforce',
+          external_account_key: externalAccountKey,
+          connection_id: connection?.id ?? null,
+          status: 'pending',
+          details_json: { instance_url: token.instance_url, organization_id: orgId, issued_at: new Date().toISOString() },
+          expires_at: expiresAt
+        })
+        .select('id')
+        .single();
+      installId = inserted.id;
+    }
+
+    await supabase.from('oauth_states').update({ used_at: new Date().toISOString() }).eq('state', state);
+    return Response.redirect(`${Deno.env.get('APP_BASE_URL') ?? 'http://localhost:3000'}/claim-install?crm=salesforce&install_id=${installId}`, 302);
+  }
 
   await supabase.from('oauth_states').update({ used_at: new Date().toISOString() }).eq('state', state);
 

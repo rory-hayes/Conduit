@@ -7,6 +7,21 @@ import { createSalesforceTokenManager } from '../../connectors/salesforce/tokenM
 
 const isDryRun = () => process.env.DRY_RUN !== 'false';
 
+
+const resolveSalesforceOpportunityAssociation = async (workspaceId: string, threadId: string): Promise<string | null> => {
+  const { rows } = await withClient((client) =>
+    client.query(
+      `SELECT d.crm_deal_id
+       FROM thread_links tl
+       JOIN deals d ON d.id = tl.deal_id
+       WHERE tl.workspace_id = $1 AND tl.thread_id = $2 AND d.crm = 'salesforce'
+       LIMIT 1`,
+      [workspaceId, threadId]
+    )
+  );
+  return rows[0]?.crm_deal_id ? String(rows[0].crm_deal_id) : null;
+};
+
 export const syncSalesforce: JobProcessor = async ({ job }) => {
   const threadId = String(job.payload.thread_id ?? '');
   const schemaVersion = String(job.payload.schema_version ?? 'v1');
@@ -56,12 +71,15 @@ export const syncSalesforce: JobProcessor = async ({ job }) => {
 
   try {
     const leadResult = await client.upsertLeadMinimal(email, null, null, {});
-    const task = await client.createTask({
+    const opportunityId = await resolveSalesforceOpportunityAssociation(job.workspaceId, threadId);
+    const taskPayload: Record<string, unknown> = {
       Subject: 'Weekly deal summary',
       Description: summary,
-      ActivityDate: new Date().toISOString().slice(0, 10),
-      WhoId: leadResult.id
-    });
+      ActivityDate: new Date().toISOString().slice(0, 10)
+    };
+    if (leadResult.id) taskPayload.WhoId = leadResult.id;
+    if (opportunityId) taskPayload.WhatId = opportunityId;
+    const task = await client.createTask(taskPayload);
 
     await withClient((dbClient) =>
       dbClient.query(

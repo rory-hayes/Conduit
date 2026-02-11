@@ -12,6 +12,10 @@ vi.mock('../src/db.js', () => ({
         if (sql.includes('SELECT id, status FROM crm_write_log')) {
           return { rows: [{ id: 'l1', status: dbRows.status }] };
         }
+        if (sql.includes('FROM thread_links')) {
+          if (sql.includes("d.crm = 'hubspot'")) return { rows: [{ crm_deal_id: 'hd1' }] };
+          if (sql.includes("d.crm = 'salesforce'")) return { rows: [{ crm_deal_id: 'op1' }] };
+        }
         return { rows: [] };
       }
     })
@@ -23,8 +27,8 @@ vi.mock('../src/audit/audit.js', () => ({
   }
 }));
 
-const hubspotCalls = { upsert: 0, task: 0, note: 0 };
-const salesforceCalls = { upsertLead: 0, task: 0 };
+const hubspotCalls = { upsert: 0, task: 0, note: 0, taskAssociations: [] as any[], noteAssociations: [] as any[] };
+const salesforceCalls = { upsertLead: 0, task: 0, taskPayloads: [] as any[] };
 const hubspotError = { message: '' };
 const salesforceError = { message: '' };
 
@@ -35,12 +39,14 @@ vi.mock('../src/connectors/hubspot/client.js', () => ({
       if (hubspotError.message) throw new Error(hubspotError.message);
       return { record: { id: 'c1' } };
     },
-    createTask: async () => {
+    createTask: async (_props: any, associations: any[]) => {
       hubspotCalls.task += 1;
+      hubspotCalls.taskAssociations.push(associations);
       return { id: 't1' };
     },
-    createNote: async () => {
+    createNote: async (_props: any, associations: any[]) => {
       hubspotCalls.note += 1;
+      hubspotCalls.noteAssociations.push(associations);
       return { id: 'n1' };
     }
   })
@@ -53,8 +59,9 @@ vi.mock('../src/connectors/salesforce/client.js', () => ({
       if (salesforceError.message) throw new Error(salesforceError.message);
       return { id: 'l1', mode: 'updated' };
     },
-    createTask: async () => {
+    createTask: async (payload: any) => {
       salesforceCalls.task += 1;
+      salesforceCalls.taskPayloads.push(payload);
       return { id: 'task1' };
     }
   })
@@ -86,8 +93,11 @@ describe('sync processors', () => {
     hubspotCalls.upsert = 0;
     hubspotCalls.task = 0;
     hubspotCalls.note = 0;
+    hubspotCalls.taskAssociations = [];
+    hubspotCalls.noteAssociations = [];
     salesforceCalls.upsertLead = 0;
     salesforceCalls.task = 0;
+    salesforceCalls.taskPayloads = [];
     hubspotError.message = '';
     salesforceError.message = '';
     process.env.DRY_RUN = 'true';
@@ -107,11 +117,20 @@ describe('sync processors', () => {
     expect(hubspotCalls.upsert).toBe(0);
   });
 
+  it('adds hubspot deal association when thread has mapped deal', async () => {
+    process.env.DRY_RUN = 'false';
+    await syncHubSpot({ clientId: 'x', job: baseJob as any });
+    expect(hubspotCalls.taskAssociations[0]).toEqual([{ toObjectId: 'c1' }, { toObjectId: 'hd1' }]);
+    expect(hubspotCalls.noteAssociations[0]).toEqual([{ toObjectId: 'c1' }, { toObjectId: 'hd1' }]);
+  });
+
   it('executes salesforce sync when dry run disabled', async () => {
     process.env.DRY_RUN = 'false';
     await syncSalesforce({ clientId: 'x', job: { ...baseJob, type: 'sync_salesforce' } as any });
     expect(salesforceCalls.upsertLead).toBe(1);
     expect(salesforceCalls.task).toBe(1);
+    expect(salesforceCalls.taskPayloads[0].WhatId).toBe('op1');
+    expect(salesforceCalls.taskPayloads[0].WhoId).toBe('l1');
   });
 
   it('marks auth errors by surfacing exception for retry handling', async () => {

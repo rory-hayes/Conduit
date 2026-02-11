@@ -8,6 +8,9 @@ import { DriftAlertBanner } from '../src/components/DriftAlertBanner';
 import { RollupViewer } from '../src/components/RollupViewer';
 import { AIRollupsToggle } from '../src/components/AIRollupsToggle';
 import { IntegrationCard } from '../src/components/IntegrationCard';
+import { RetentionSettingsCard } from '../src/components/RetentionSettingsCard';
+import { ConnectionHealthCard } from '../src/components/ConnectionHealthCard';
+import { ClaimInstallCard } from '../src/components/ClaimInstallCard';
 
 describe('web components', () => {
   it('renders nav links', () => {
@@ -109,6 +112,60 @@ describe('web components', () => {
     expect(html).toContain('Connect');
     expect(html).toContain('Disconnect');
     expect(html).not.toContain('access_token');
+  });
+
+
+  it('renders claim install card with workspace selector and claim action', () => {
+    const html = renderToStaticMarkup(
+      <ClaimInstallCard
+        crm="hubspot"
+        installId="pi_1"
+        workspaces={[{ id: 'w1', name: 'Workspace 1' }]}
+        selectedWorkspaceId="w1"
+        onWorkspaceChange={() => undefined}
+        onClaim={async () => undefined}
+      />
+    );
+
+    expect(html).toContain('Claim HubSpot install');
+    expect(html).toContain('Install ID: pi_1');
+    expect(html).toContain('Claim install');
+  });
+
+  it('renders connection health card with reconnect/disconnect actions', () => {
+    const html = renderToStaticMarkup(
+      <ConnectionHealthCard
+        crm="salesforce"
+        status="warning"
+        lastCheckedAt="2026-01-01T00:00:00Z"
+        details="scope mismatch"
+        onReconnect={async () => undefined}
+        onDisconnect={async () => undefined}
+      />
+    );
+
+    expect(html).toContain('Salesforce health');
+    expect(html).toContain('Reconnect');
+    expect(html).toContain('Disconnect');
+    expect(html).toContain('scope mismatch');
+  });
+
+  it('renders retention settings card validation copy', () => {
+    const html = renderToStaticMarkup(
+      <RetentionSettingsCard
+        rawEmailRetentionDays={0}
+        attachmentRetentionDays={0}
+        purgeEnabled={true}
+        onRawEmailRetentionDaysChange={() => undefined}
+        onAttachmentRetentionDaysChange={() => undefined}
+        onPurgeEnabledChange={() => undefined}
+        onSave={async () => undefined}
+      />
+    );
+
+    expect(html).toContain('Retention policy');
+    expect(html).toContain('Raw email retention must be at least 1 day.');
+    expect(html).toContain('Attachment retention must be at least 1 day.');
   });
 
   it('triggerLink uses callback when provided', async () => {

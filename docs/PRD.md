@@ -95,3 +95,10 @@ Conduit is a revenue inbox intelligence platform that ingests raw emails and att
 - Raw email bodies are never sent by default and never written to CRM.
 - Product anti-spam posture is unchanged: CRM receives one curated weekly note plus optional high-confidence deltas.
 - Invalid or failed AI outputs automatically fall back to deterministic weekly rollups.
+
+## V1.4 Marketplace Readiness Hardening
+
+- Install-first OAuth: HubSpot/Salesforce installs can complete without an existing Conduit session, then be claimed into a workspace from `/claim-install`.
+- Connection health: hourly checks validate token usability/scopes and surface status (`ok|warning|error`) on Integrations.
+- Reconciliation hardening: failed/planned CRM writes are retried idempotently with backoff; repeated failures become permanent and visible for operator action.
+- Retention controls: workspace admins can configure raw email + attachment retention and purge enablement; purge redacts message bodies and removes stale attachment paths while retaining audit/metrics by default.

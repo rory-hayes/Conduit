@@ -5,7 +5,10 @@ export type JobType =
   | 'sync_salesforce'
   | 'weekly_digest'
   | 'weekly_rollup'
-  | 'ocr_textract';
+  | 'ocr_textract'
+  | 'reconcile_connections'
+  | 'reconcile_crm_writes'
+  | 'purge_retention';
 
 export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed';
 

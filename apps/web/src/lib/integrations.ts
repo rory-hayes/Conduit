@@ -4,34 +4,43 @@ const getClient = () => createClient(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
 
 export interface CrmConnectionMeta {
   crm: 'hubspot' | 'salesforce';
-  status: 'connected' | 'disconnected' | 'error';
+  status: 'connected' | 'disconnected' | 'error' | 'pending_claim';
   last_checked_at: string | null;
   last_error: string | null;
 }
 
+export interface ConnectionHealthMeta {
+  crm: 'hubspot' | 'salesforce';
+  status: 'ok' | 'warning' | 'error';
+  last_checked_at: string | null;
+  details_json: Record<string, unknown> | null;
+}
+
 export const listCrmConnections = async (): Promise<CrmConnectionMeta[]> => {
   const supabase = getClient();
-  const { data } = await supabase
-    .from('crm_connections')
-    .select('crm,status,last_checked_at,last_error')
-    .in('crm', ['hubspot', 'salesforce']);
-
+  const { data } = await supabase.from('crm_connections').select('crm,status,last_checked_at,last_error').in('crm', ['hubspot', 'salesforce']);
   return (data as CrmConnectionMeta[] | null) ?? [];
 };
 
-export const startOAuth = async (crm: 'hubspot' | 'salesforce', workspaceId: string): Promise<string> => {
+export const listConnectionHealth = async (): Promise<ConnectionHealthMeta[]> => {
+  const supabase = getClient();
+  const { data } = await supabase.from('connection_health').select('crm,status,last_checked_at,details_json').in('crm', ['hubspot', 'salesforce']);
+  return (data as ConnectionHealthMeta[] | null) ?? [];
+};
+
+export const startOAuth = async (crm: 'hubspot' | 'salesforce', workspaceId?: string): Promise<string> => {
   const endpoint = crm === 'hubspot' ? 'hubspot-oauth-start' : 'salesforce-oauth-start';
   const response = await fetch(`/functions/v1/${endpoint}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ workspace_id: workspaceId, redirect_to: '/integrations' })
+    body: JSON.stringify({ workspace_id: workspaceId ?? null, redirect_to: '/integrations' })
   });
   const body = await response.json();
   return body.authorizeUrl;
 };
 
 export const disconnectCrm = async (crm: 'hubspot' | 'salesforce', workspaceId: string): Promise<void> => {
-  await fetch('/functions/v1/crm-disconnect', {
+  await fetch('/functions/v1/disconnect-crm', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ workspace_id: workspaceId, crm })

@@ -28,6 +28,14 @@ describe('integrations lib', () => {
     expect(selectMock).toHaveBeenCalledWith('crm,status,last_checked_at,last_error');
   });
 
+
+  it('lists connection health metadata', async () => {
+    const { listConnectionHealth } = await import('../src/lib/integrations');
+    const rows = await listConnectionHealth();
+    expect(rows[0].crm).toBe('hubspot');
+    expect(selectMock).toHaveBeenCalledWith('crm,status,last_checked_at,details_json');
+  });
+
   it('returns authorize url from oauth start endpoint', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ json: async () => ({ authorizeUrl: 'https://example.com/auth' }) });
     vi.stubGlobal('fetch', fetchMock as any);
@@ -43,6 +51,6 @@ describe('integrations lib', () => {
     const { disconnectCrm } = await import('../src/lib/integrations');
 
     await disconnectCrm('salesforce', 'w1');
-    expect(fetchMock).toHaveBeenCalledWith('/functions/v1/crm-disconnect', expect.any(Object));
+    expect(fetchMock).toHaveBeenCalledWith('/functions/v1/disconnect-crm', expect.any(Object));
   });
 });
