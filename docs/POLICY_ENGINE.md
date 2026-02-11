@@ -37,3 +37,12 @@
   - proposes follow-up questions/tasks,
   - logs planned CRM tasks in dry-run mode,
   - avoids per-email CRM writes and raw-content propagation.
+
+## Drift pause controls
+- New policy keys:
+  - `pause_on_drift` (boolean, default `true`)
+  - `drift_thresholds` (`historical_min=0.85`, `current_max=0.60`)
+  - `pause_scope` (`source_key` default; future `schema` / `workspace`)
+- Drift evaluation runs after extraction quality scoring.
+- If drift triggers and pause is enabled, CRM sync is blocked, write pause is asserted, and review item routing is mandatory.
+- Confidence gating still applies independently: low-confidence fields route to review even without drift.

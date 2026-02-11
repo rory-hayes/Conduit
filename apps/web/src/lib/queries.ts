@@ -67,6 +67,21 @@ export interface DealFactRow {
   confidence: number;
 }
 
+
+export interface WeeklyRollupRow {
+  id: string;
+  deal_id: string;
+  week_start: string;
+  week_end: string;
+  summary_md: string;
+}
+
+export interface PolicySettingsRow {
+  pause_on_drift: boolean;
+  write_weekly_rollup_to_crm: boolean;
+  create_crm_deltas: boolean;
+}
+
 export interface ThreadDetail {
   messages: ThreadMessageRow[];
   fields: FieldValueRow[];
@@ -77,7 +92,9 @@ export interface ThreadDetail {
   dealReadiness: DealReadinessRow | null;
   dealFacts: DealFactRow[];
   needsLinkingCandidates: DealCandidateRow[];
+  pausedByDrift: boolean;
 }
+
 
 const questionMap: Record<string, string> = {
   budget: 'Do you have a budget range allocated for this?',
@@ -120,7 +137,7 @@ export const getOpenReviewItems = async (): Promise<ReviewItemRow[]> => {
 export const getThreadDetail = async (threadId: string): Promise<ThreadDetail> => {
   const supabase = createServerClient();
 
-  const [messages, fields, reviewItems, crmLog, threadLink] = await Promise.all([
+  const [messages, fields, reviewItems, crmLog, threadLink, driftPause] = await Promise.all([
     supabase.from('messages').select('id,from_email,subject,text,created_at').eq('thread_id', threadId),
     supabase
       .from('field_values')
@@ -129,7 +146,13 @@ export const getThreadDetail = async (threadId: string): Promise<ThreadDetail> =
       .order('created_at', { ascending: false }),
     supabase.from('review_items').select('id,thread_id,reason,status,payload_json,created_at').eq('thread_id', threadId),
     supabase.from('crm_write_log').select('id,crm,action,status,created_at').eq('thread_id', threadId),
-    supabase.from('thread_links').select('deal_id,link_confidence,link_reason').eq('thread_id', threadId).maybeSingle()
+    supabase.from('thread_links').select('deal_id,link_confidence,link_reason').eq('thread_id', threadId).maybeSingle(),
+    supabase
+      .from('drift_alerts')
+      .select('id')
+      .eq('thread_id', threadId)
+      .eq('status', 'open')
+      .limit(1)
   ]);
 
   const linkedDealId = threadLink.data?.deal_id;
@@ -159,6 +182,38 @@ export const getThreadDetail = async (threadId: string): Promise<ThreadDetail> =
     deal: deal.data ?? null,
     dealReadiness: dealReadiness.data ?? null,
     dealFacts: dealFacts.data ?? [],
-    needsLinkingCandidates
+    needsLinkingCandidates,
+    pausedByDrift: (driftPause.data ?? []).length > 0
+  };
+};
+
+
+export const getOpenDriftAlertCount = async (): Promise<number> => {
+  const supabase = createServerClient();
+  const { count } = await supabase
+    .from('drift_alerts')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'open');
+  return count ?? 0;
+};
+
+export const getWeeklyRollups = async (): Promise<WeeklyRollupRow[]> => {
+  const supabase = createServerClient();
+  const { data } = await supabase
+    .from('weekly_rollups')
+    .select('id,deal_id,week_start,week_end,summary_md')
+    .order('week_start', { ascending: false })
+    .limit(30);
+  return data ?? [];
+};
+
+export const getPolicySettings = async (): Promise<PolicySettingsRow> => {
+  const supabase = createServerClient();
+  const { data } = await supabase.from('policies').select('policy').order('created_at', { ascending: false }).limit(1).maybeSingle();
+  const policy = (data?.policy ?? {}) as Record<string, unknown>;
+  return {
+    pause_on_drift: policy.pause_on_drift !== false,
+    write_weekly_rollup_to_crm: policy.write_weekly_rollup_to_crm === true,
+    create_crm_deltas: policy.create_crm_deltas === true
   };
 };

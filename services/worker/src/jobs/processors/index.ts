@@ -3,6 +3,7 @@ import { syncHubSpot } from './syncHubSpot.js';
 import { associateThreadProcessor } from './associateThread.js';
 import { syncSalesforce } from './syncSalesforce.js';
 import { weeklyDigest } from './weeklyDigest.js';
+import { weeklyRollup } from './weeklyRollup.js';
 import { ocrTextract } from './ocrTextract.js';
 import type { JobProcessor } from '../types.js';
 
@@ -12,5 +13,6 @@ export const jobProcessors: Record<string, JobProcessor> = {
   sync_hubspot: syncHubSpot,
   sync_salesforce: syncSalesforce,
   weekly_digest: weeklyDigest,
+  weekly_rollup: weeklyRollup,
   ocr_textract: ocrTextract
 };

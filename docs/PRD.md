@@ -80,3 +80,9 @@ Conduit is a revenue inbox intelligence platform that ingests raw emails and att
 - Missing keys generate suggested follow-up questions and one-click internal task intents.
 - To avoid CRM spam, readiness deltas are logged internally and rolled into task-first/weekly summary patterns.
 - No raw email content or attachments are pushed to CRM as part of readiness.
+
+## V1.2 Weekly Rollups + Drift Pause
+- Conduit remains the canonical store for full email conversations, extraction evidence, and audits.
+- CRM receives curated outcomes only: weekly summary note + optional high-signal delta updates.
+- Weekly rollups are generated per deal/week and retained internally for reporting.
+- Drift pause prevents CRM writes when extraction quality materially degrades for a known source pattern.

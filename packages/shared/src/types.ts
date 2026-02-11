@@ -4,6 +4,7 @@ export type JobType =
   | 'sync_hubspot'
   | 'sync_salesforce'
   | 'weekly_digest'
+  | 'weekly_rollup'
   | 'ocr_textract';
 
 export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed';
