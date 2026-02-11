@@ -1,22 +1,28 @@
 import { z } from 'zod';
 
 export const inboundEmailSchema = z.object({
-  workspaceId: z.string().uuid(),
-  externalId: z.string().min(1),
-  subject: z.string().min(1),
+  to: z.string().email(),
   from: z.string().email(),
-  to: z.array(z.string().email()),
-  cc: z.array(z.string().email()).optional(),
-  bodyText: z.string().optional(),
-  receivedAt: z.string(),
+  subject: z.string().min(1),
+  text: z.string().optional(),
+  html: z.string().optional(),
+  message_id: z.string().min(1),
+  in_reply_to: z.string().nullable().optional(),
+  references: z.array(z.string().min(1)).optional(),
+  received_at: z.string().datetime(),
   attachments: z
     .array(
       z.object({
-        filename: z.string(),
-        contentType: z.string(),
-        sizeBytes: z.number().int().nonnegative(),
-        storagePath: z.string().optional()
+        filename: z.string().min(1),
+        content_type: z.string().min(1),
+        size: z.number().int().nonnegative(),
+        source: z.string().min(1)
       })
     )
     .optional()
+});
+
+export const workspaceAliasSchema = z.object({
+  workspaceId: z.string().uuid(),
+  aliasToken: z.string().min(1)
 });

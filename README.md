@@ -37,3 +37,4 @@ See `/docs` for PRD, architecture, data model, and operational runbooks.
 - Lint: `pnpm -w lint`
 - Typecheck: `pnpm -w typecheck`
 - Tests: `pnpm -w test`
+- Coverage: `pnpm -w test:coverage` (thresholds: lines/functions/branches/statements >= 95%)

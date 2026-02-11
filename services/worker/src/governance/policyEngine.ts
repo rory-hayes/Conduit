@@ -1,30 +1,25 @@
-import { REVIEW_CONFIDENCE_THRESHOLD, DRIFT_PAUSE_THRESHOLD } from '@conduit/shared';
+import type { ExtractedField } from '../extraction/openaiExtractor.js';
 
 export interface PolicyDecision {
-  allowCrmWrite: boolean;
-  requiresReview: boolean;
-  reason?: string;
+  action: 'review' | 'sync';
+  reason?: 'missing_or_low_confidence_email' | 'missing_or_low_confidence_name';
 }
 
-export const evaluatePolicies = (confidenceScore: number): PolicyDecision => {
-  if (confidenceScore < DRIFT_PAUSE_THRESHOLD) {
-    return {
-      allowCrmWrite: false,
-      requiresReview: true,
-      reason: 'drift_pause'
-    };
+const byKey = (fields: ExtractedField[], key: ExtractedField['field_key']) => {
+  return fields.find((field) => field.field_key === key);
+};
+
+export const evaluatePolicies = (fields: ExtractedField[]): PolicyDecision => {
+  const email = byKey(fields, 'email');
+  const name = byKey(fields, 'name');
+
+  if (!email || email.confidence < 0.85) {
+    return { action: 'review', reason: 'missing_or_low_confidence_email' };
   }
 
-  if (confidenceScore < REVIEW_CONFIDENCE_THRESHOLD) {
-    return {
-      allowCrmWrite: false,
-      requiresReview: true,
-      reason: 'low_confidence'
-    };
+  if (!name || name.confidence < 0.85) {
+    return { action: 'review', reason: 'missing_or_low_confidence_name' };
   }
 
-  return {
-    allowCrmWrite: true,
-    requiresReview: false
-  };
+  return { action: 'sync' };
 };

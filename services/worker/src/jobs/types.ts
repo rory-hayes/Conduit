@@ -2,11 +2,11 @@ import type { JobPayload, JobStatus, JobType } from '@conduit/shared';
 
 export interface JobRecord {
   id: string;
+  workspaceId: string;
   type: JobType;
   status: JobStatus;
   payload: JobPayload;
   attempts: number;
-  maxAttempts: number;
   lockedAt: string | null;
   createdAt: string;
   updatedAt: string;
