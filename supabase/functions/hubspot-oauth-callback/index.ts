@@ -42,22 +42,60 @@ Deno.serve(async (req) => {
   }
 
   const token = await tokenResponse.json();
-  await supabase.from('crm_connections').upsert(
-    {
-      workspace_id: oauthState.workspace_id,
-      crm: 'hubspot',
-      status: 'connected',
-      access_token_ciphertext: await encryptToB64(token.access_token),
-      refresh_token_ciphertext: token.refresh_token ? await encryptToB64(token.refresh_token) : null,
-      token_expires_at: token.expires_in ? new Date(Date.now() + token.expires_in * 1000).toISOString() : null,
-      scopes_json: token.scope ? String(token.scope).split(' ') : null,
-      external_account_json: token.hub_id ? { hub_id: token.hub_id } : null,
-      last_checked_at: new Date().toISOString(),
-      last_error: null,
-      updated_at: new Date().toISOString()
-    },
-    { onConflict: 'workspace_id,crm' }
-  );
+  const externalAccountKey = String(token.hub_id ?? token.user ?? 'unknown_hub');
+
+  const connectionPayload = {
+    workspace_id: oauthState.workspace_id ?? null,
+    crm: 'hubspot',
+    status: oauthState.workspace_id ? 'connected' : 'pending_claim',
+    access_token_ciphertext: await encryptToB64(token.access_token),
+    refresh_token_ciphertext: token.refresh_token ? await encryptToB64(token.refresh_token) : null,
+    token_expires_at: token.expires_in ? new Date(Date.now() + token.expires_in * 1000).toISOString() : null,
+    scopes_json: token.scope ? String(token.scope).split(' ') : null,
+    external_account_json: { hub_id: token.hub_id },
+    last_checked_at: new Date().toISOString(),
+    last_error: null,
+    updated_at: new Date().toISOString()
+  };
+
+  const { data: connection, error: upsertError } = await supabase.from('crm_connections').upsert(connectionPayload, { onConflict: 'workspace_id,crm' }).select('id').maybeSingle();
+  if (upsertError) return new Response(upsertError.message, { status: 500, headers: corsHeaders });
+
+  if (!oauthState.workspace_id) {
+    const expiresAt = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: existingPending } = await supabase
+      .from('pending_installs')
+      .select('id')
+      .eq('crm', 'hubspot')
+      .eq('external_account_key', externalAccountKey)
+      .eq('status', 'pending')
+      .maybeSingle();
+
+    let installId = existingPending?.id;
+    if (installId) {
+      await supabase
+        .from('pending_installs')
+        .update({ connection_id: connection?.id ?? null, details_json: { scope: token.scope, hub_id: token.hub_id }, expires_at: expiresAt })
+        .eq('id', installId);
+    } else {
+      const { data: inserted } = await supabase
+        .from('pending_installs')
+        .insert({
+          crm: 'hubspot',
+          external_account_key: externalAccountKey,
+          connection_id: connection?.id ?? null,
+          status: 'pending',
+          details_json: { scope: token.scope, hub_id: token.hub_id, issued_at: new Date().toISOString() },
+          expires_at: expiresAt
+        })
+        .select('id')
+        .single();
+      installId = inserted.id;
+    }
+
+    await supabase.from('oauth_states').update({ used_at: new Date().toISOString() }).eq('state', state);
+    return Response.redirect(`${Deno.env.get('APP_BASE_URL') ?? 'http://localhost:3000'}/claim-install?crm=hubspot&install_id=${installId}`, 302);
+  }
 
   await supabase.from('oauth_states').update({ used_at: new Date().toISOString() }).eq('state', state);
 

@@ -8,11 +8,10 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   const { workspace_id, redirect_to } = await req.json();
-  if (!workspace_id) return new Response(JSON.stringify({ error: 'workspace_id required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   const state = crypto.randomUUID();
   const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
-  await supabase.from('oauth_states').insert({ workspace_id, crm: 'salesforce', state, redirect_to: redirect_to ?? '/integrations', expires_at: new Date(Date.now() + 10 * 60_000).toISOString() });
+  await supabase.from('oauth_states').insert({ workspace_id: workspace_id ?? null, crm: 'salesforce', state, redirect_to: redirect_to ?? '/integrations', expires_at: new Date(Date.now() + 10 * 60_000).toISOString() });
 
   const authorizeUrl = buildSalesforceAuthorizeUrl({
     authBaseUrl: Deno.env.get('SALESFORCE_AUTH_BASE_URL') ?? 'https://login.salesforce.com',

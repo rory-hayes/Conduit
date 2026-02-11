@@ -5,3 +5,6 @@ export * from './constants';
 
 export * from './crypto';
 export * from './oauth';
+
+export * from './marketplace';
+export * from './retention';

@@ -28,3 +28,14 @@
 - 429/5xx are retriable via shared retry helper.
 - 4xx (except auth) are treated as terminal and surfaced for operator action.
 - 401/403 trigger token refresh path once; repeated failures mark connection `error` with actionable `last_error`.
+
+## V1.4 Marketplace Readiness Hardening
+
+- Association rules (V1.4 hardening):
+  - HubSpot sync:
+    - Always associate task/note to contact when identified.
+    - If `thread_links` maps to an internal deal that has HubSpot `crm_deal_id`, also attach to that deal.
+  - Salesforce sync:
+    - Create Task with `WhatId` set to mapped opportunity ID when available.
+    - Set `WhoId` when a lead/contact is available from minimal upsert.
+  - If no deal/opportunity mapping exists, fall back to contact/lead-only associations.

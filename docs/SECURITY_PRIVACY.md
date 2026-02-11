@@ -19,3 +19,17 @@
 - OAuth states use short TTL (10 minutes).
 - Logs and CRM payloads should never contain plaintext tokens or raw email body content.
 - Disconnect flow wipes token ciphertext and resets status.
+
+## V1.4 Marketplace Readiness Hardening
+
+- Retention policy options:
+  - `raw_email_retention_days` and `attachment_retention_days` (default 30/30).
+  - `purge_enabled` to disable automated purges.
+  - `keep_extracted_fields` and `keep_audit_events` default true to preserve minimal operational evidence.
+- Disconnect semantics:
+  - `disconnect-crm` clears encrypted tokens server-side and sets integration status to `disconnected`.
+  - Health metadata remains (non-sensitive) for operational history.
+- Deletion semantics:
+  - Raw message `text/html` is redacted after retention cutoff (`is_redacted=true`, timestamped).
+  - Attachment storage references are nulled after retention cutoff.
+  - Audit events and idempotency logs are retained unless explicit policy changes are made.

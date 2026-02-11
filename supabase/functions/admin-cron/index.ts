@@ -29,12 +29,20 @@ Deno.serve(async (req) => {
   }
 
   const window = getWeekWindow();
-  const rows = (workspaces ?? []).map((workspace) => ({
+  const rollupRows = (workspaces ?? []).map((workspace) => ({
     workspace_id: workspace.id,
     type: 'weekly_rollup',
     status: 'queued',
     payload: window
   }));
+
+  const opsRows = [
+    { workspace_id: (workspaces ?? [])[0]?.id ?? null, type: 'reconcile_connections', status: 'queued', payload: {} },
+    { workspace_id: (workspaces ?? [])[0]?.id ?? null, type: 'reconcile_crm_writes', status: 'queued', payload: {} },
+    { workspace_id: (workspaces ?? [])[0]?.id ?? null, type: 'purge_retention', status: 'queued', payload: {} }
+  ].filter((row) => Boolean(row.workspace_id));
+
+  const rows = [...rollupRows, ...opsRows];
 
   if (rows.length > 0) {
     const { error } = await supabase.from('jobs').insert(rows);
