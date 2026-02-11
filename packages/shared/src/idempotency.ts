@@ -38,6 +38,24 @@ export const buildCrmIdempotencyKey = (input: CrmIdempotencyInput): string => {
   ]);
 };
 
+export interface DealLinkIdempotencyInput {
+  workspace_id: string;
+  thread_id: string;
+  deal_id: string;
+  source_event_id: string;
+}
+
+export const buildDealLinkIdempotencyKey = (input: DealLinkIdempotencyInput): string => {
+  return buildIdempotencyKey([
+    input.workspace_id,
+    'deal_link',
+    input.thread_id,
+    input.deal_id,
+    'link',
+    input.source_event_id
+  ]);
+};
+
 export const hashPayload = (payload: unknown): string => {
   return crypto.createHash('sha256').update(stableStringify(payload)).digest('hex');
 };

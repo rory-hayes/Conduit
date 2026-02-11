@@ -22,6 +22,7 @@ describe('misc worker modules', () => {
   it('exposes expected job processor mappings', () => {
     expect(Object.keys(jobProcessors)).toEqual([
       'extract_thread',
+      'associate_thread',
       'sync_hubspot',
       'sync_salesforce',
       'weekly_digest',
