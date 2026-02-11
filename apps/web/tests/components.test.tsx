@@ -7,6 +7,7 @@ import { DealLinker, triggerLink } from '../src/components/DealLinker';
 import { DriftAlertBanner } from '../src/components/DriftAlertBanner';
 import { RollupViewer } from '../src/components/RollupViewer';
 import { AIRollupsToggle } from '../src/components/AIRollupsToggle';
+import { IntegrationCard } from '../src/components/IntegrationCard';
 
 describe('web components', () => {
   it('renders nav links', () => {
@@ -89,6 +90,25 @@ describe('web components', () => {
     expect(html).toContain('AI Rollups send minimized context only');
     expect(html).toContain('Enable AI-generated weekly rollups');
     expect(html).toContain('Structured + redacted snippets');
+  });
+
+
+  it('renders integration card status and actions without token leakage', () => {
+    const html = renderToStaticMarkup(
+      <IntegrationCard
+        crm="hubspot"
+        status="error"
+        lastCheckedAt="2026-01-01T00:00:00Z"
+        lastError="scope missing"
+        onConnect={async () => undefined}
+        onDisconnect={async () => undefined}
+      />
+    );
+
+    expect(html).toContain('HubSpot');
+    expect(html).toContain('Connect');
+    expect(html).toContain('Disconnect');
+    expect(html).not.toContain('access_token');
   });
 
   it('triggerLink uses callback when provided', async () => {
