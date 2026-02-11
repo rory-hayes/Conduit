@@ -1,34 +1,21 @@
 # Security & Privacy
 
-## Data Retention
-- Raw emails and attachments are retained in Conduit according to workspace policy.
-- CRM receives only curated outcomes; raw content never leaves Conduit.
+## Data boundaries
+- Raw email content and attachments stay inside Conduit storage.
+- CRM payloads are curated summaries/tasks/limited high-confidence fields only.
 
-## Encryption
-- Supabase Postgres encryption at rest.
-- Attachments stored in Supabase Storage with bucket-level policies.
+## Token storage and access
+- OAuth access/refresh tokens are encrypted with AES-GCM using `TOKEN_ENC_KEY_B64`.
+- Token ciphertext is stored in `crm_connections` server-side only.
+- Browser/UI only reads redacted metadata (`crm`, `status`, `last_checked_at`, `last_error`).
+- OAuth state rows are server-only and never exposed to client keys.
 
-## Least Privilege
-- Service role keys only used by edge functions and worker.
-- Web app uses anon key with RLS.
+## Audit and traceability
+- Planned and successful CRM writes emit audit events.
+- `crm_write_log` stores idempotency key, payload hash, external IDs, status, and response snippets.
+- Refresh failures and revoked tokens are recorded in audit + connection error fields.
 
-## RLS Approach
-- All workspace data is scoped via RLS.
-- Policies must ensure only workspace members can access records.
-
-## Audit Trails
-- Every CRM write is recorded in `crm_write_log`.
-- Worker emits `audit_events` for ingestion, extraction, and sync.
-
-## Customer Controls
-- Retention windows.
-- Drift pause toggles.
-- Review queue SLAs.
-
-## LLM Data Minimization
-- Default mode is `structured_only`; this excludes raw message text and attachment content.
-- Optional `structured_plus_snippets` mode is explicit policy opt-in and only sends capped, short snippets.
-- Snippet redaction removes direct phone numbers and masks email local-parts (`***@domain.tld`).
-- Only high-signal snippet classes (pricing request, objection, legal) are eligible for snippet context.
-- LLM run inputs/outputs are retained in `llm_runs` for auditability and incident response, with prompt hash and validation status.
-- CRM remains curated-outcomes only; no raw email payloads are copied to CRM logs or notes.
+## Retention and minimization
+- OAuth states use short TTL (10 minutes).
+- Logs and CRM payloads should never contain plaintext tokens or raw email body content.
+- Disconnect flow wipes token ciphertext and resets status.

@@ -1,28 +1,30 @@
 # CRM Connectors
 
-## HubSpot
-- Objects: Task + Note + minimal field updates.
-- Field mapping: task due date, priority, and summary note.
-- Idempotency key derived from workspace + thread + action.
+## Core principles
+- Conduit is canonical for raw email, attachments, extraction output, and audits.
+- CRM receives curated outcomes only (no raw email bodies/attachments).
+- Every write uses deterministic idempotency keys and is logged in `crm_write_log`.
 
-## Salesforce
-- Objects: Task + Note + minimal field updates.
-- Field mapping: task subject, status, and summary note.
-- Idempotency key derived from workspace + thread + action.
+## HubSpot connector
+- OAuth: `/functions/v1/hubspot-oauth-start` and `/functions/v1/hubspot-oauth-callback`.
+- Contact upsert: search by email (`/crm/v3/objects/contacts/search`), then create (`POST /crm/v3/objects/contacts`) or update (`PATCH /crm/v3/objects/contacts/{id}`).
+- Task write: `POST /crm/v3/objects/tasks` with curated subject/timestamps and contact association.
+- Weekly rollup note: `POST /crm/v3/objects/notes` with summary body and same association pattern.
+- Associations: worker resolves association labels via v4 endpoint and caches type IDs in-process with TTL.
 
-## Failure & Retry
-- All writes are logged in `crm_write_log` with status and payload hash.
-- Retries must be safe (idempotent).
-- Failures above threshold trigger drift pause.
+## Salesforce connector
+- OAuth: `/functions/v1/salesforce-oauth-start` and `/functions/v1/salesforce-oauth-callback`.
+- Lookup strategy: SOQL query for lead first, then contact by email.
+- Upsert strategy: patch existing lead (`PATCH /sobjects/Lead/{Id}`) or create minimal lead (`POST /sobjects/Lead`) with fallback required fields.
+- Task write: `POST /sobjects/Task`.
+- Weekly rollup recording: Task subject `Weekly deal summary` and description set to curated rollup text.
 
+## Idempotency keys
+- `buildCrmIdempotencyKey(workspace_id, crm_system, object_type, object_id, action, source_event_id)`.
+- `crm_write_log` unique index on `(workspace_id, crm, idempotency_key)`.
+- Processors skip records already marked `succeeded`.
 
-## Readiness-driven follow-up
-- Missing BANT readiness keys can create internal follow-up tasks.
-- In dry-run mode, planned CRM task payloads are logged to `crm_write_log` only.
-- Weekly rollups remain the preferred channel for summary note sync to reduce CRM noise.
-
-## Curated outputs for weekly operations
-- **Weekly summary note write**: one curated note per deal per week (optional by policy).
-- **Delta updates (optional)**: high-confidence field deltas only (confidence >= 0.90).
-- All writes are logged to `crm_write_log` with deterministic idempotency keys.
-- Raw email content and attachments are never written to CRM.
+## Failure modes
+- 429/5xx are retriable via shared retry helper.
+- 4xx (except auth) are treated as terminal and surfaced for operator action.
+- 401/403 trigger token refresh path once; repeated failures mark connection `error` with actionable `last_error`.
