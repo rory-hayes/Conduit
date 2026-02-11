@@ -1,33 +1,29 @@
-export type JobType =
-  | 'extract_thread'
-  | 'sync_hubspot'
-  | 'sync_salesforce'
-  | 'weekly_digest'
-  | 'ocr_textract';
+export type JobType = 'extract_thread' | 'sync_hubspot' | 'sync_salesforce' | 'weekly_digest' | 'ocr_textract';
 
-export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed';
+export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed';
 
 export interface JobPayload {
-  threadId?: string;
-  messageId?: string;
-  workspaceId?: string;
-  attempt?: number;
+  thread_id?: string;
+  message_id?: string;
+  workspace_id?: string;
+  schema_version?: string;
   [key: string]: unknown;
 }
 
 export interface InboundEmail {
-  workspaceId: string;
-  externalId: string;
-  subject: string;
+  to: string;
   from: string;
-  to: string[];
-  cc?: string[];
-  bodyText?: string;
-  receivedAt: string;
+  subject: string;
+  text?: string;
+  html?: string;
+  message_id: string;
+  in_reply_to?: string | null;
+  references?: string[];
+  received_at: string;
   attachments?: Array<{
     filename: string;
-    contentType: string;
-    sizeBytes: number;
-    storagePath?: string;
+    content_type: string;
+    size: number;
+    source: string;
   }>;
 }

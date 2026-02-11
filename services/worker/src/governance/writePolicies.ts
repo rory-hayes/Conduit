@@ -1,10 +1,13 @@
 import { evaluatePolicies } from './policyEngine.js';
+import type { ExtractedField } from '../extraction/openaiExtractor.js';
 
-export const enforceWritePolicies = async (payload: Record<string, unknown>) => {
-  const confidence = typeof payload.confidence === 'number' ? payload.confidence : 1;
-  const decision = evaluatePolicies(confidence);
+export const enforceWritePolicies = async (
+  payload: Record<string, unknown> & { fields?: ExtractedField[] }
+) => {
+  const fields = payload.fields ?? [];
+  const decision = evaluatePolicies(fields);
 
-  if (!decision.allowCrmWrite) {
+  if (decision.action === 'review') {
     return {
       ...payload,
       blocked: true,

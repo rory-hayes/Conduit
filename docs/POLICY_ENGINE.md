@@ -1,21 +1,26 @@
 # Policy Engine
 
-## Confidence Gating
-- High-confidence extractions pass directly to CRM writes.
-- Low-confidence extractions are routed to the review queue.
+## Required Field Gating (V1 Vertical Slice)
+- Required fields: `email`, `name`.
+- If `email` is missing or has confidence `< 0.85`: create open review item with reason `missing_or_low_confidence_email`.
+- Else if `name` is missing or has confidence `< 0.85`: create open review item with reason `missing_or_low_confidence_name`.
+- Else: enqueue `sync_hubspot` and `sync_salesforce` jobs.
 
-## Noise Budget
-- Each workspace has a configurable noise budget for low-confidence items.
-- If exceeded, Conduit pauses CRM writes and requires review.
+## Confidence + Review Routing
+- Deterministic parser confidence defaults:
+  - `Email` exact match: `0.99`
+  - `Name`: `0.90`
+  - `Company`: `0.85`
+  - `Intent`: `0.90`
+  - `Timeline`: `0.70`
+- Low-confidence required fields always route to review queue.
 
 ## Idempotency
-- Every CRM write includes a deterministic idempotency key derived from the source event.
-- Replays must be safe and never create duplicate CRM records.
+- CRM writes use deterministic idempotency keys derived from:
+  `(workspace_id, crm_system, object_type, object_id, action, source_event_id)`.
+- Replays are safe (`crm_write_log` insert is conflict-safe on `idempotency_key`).
 
-## Task-first Output
-- Only publish: tasks + one summary note + limited high-confidence fields.
-- Never publish raw emails or attachment content.
-
-## Drift Pause
-- If confidence falls below the drift threshold, Conduit pauses CRM writes.
-- V1 includes placeholders and audit records for drift pause events.
+## Task-first + Data Safety
+- CRM writes are dry-run by default and only record curated payload metadata.
+- Never log raw email bodies or attachment content to CRM logs.
+- All decisions and planned writes emit audit events (`crm_write_planned`, `crm_write_logged`, policy decisions).
