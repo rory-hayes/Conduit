@@ -59,3 +59,24 @@ Conduit is a revenue inbox intelligence platform that ingests raw emails and att
 ## Roadmap Highlights
 - V1.5: Drift pause automation and review escalation.
 - V2: Multi-CRM routing + SLA-based automation.
+
+
+## V1.1: Deal Support Mode
+### User guidance
+- Start with inbound-only capture on the workspace intake email.
+- Expand to deal support by CC/forwarding ongoing deal correspondence to the same workspace intake email.
+- Guiding principle: send what you want Conduit to understand; Conduit curates outcomes before CRM actions.
+
+### Auto-association approach
+- Conduit first attempts participant-email matching against known CRM-related deal participants.
+- If no email match is available, Conduit may apply a lower-confidence company-domain match.
+- If exactly one candidate is returned, Conduit links the thread to that deal/opportunity.
+- If multiple candidates are plausible, Conduit routes the thread to `Needs Linking` in the Review Queue with ranked candidates.
+- If no candidates are found, Conduit keeps the thread unlinked and routes to review for optional manual linking.
+
+### Deal readiness checklist (BANT v1)
+- For linked deals, Conduit tracks Budget, Authority, Need, Timeline readiness.
+- Readiness is computed internally from extracted facts and conservative heuristics.
+- Missing keys generate suggested follow-up questions and one-click internal task intents.
+- To avoid CRM spam, readiness deltas are logged internally and rolled into task-first/weekly summary patterns.
+- No raw email content or attachments are pushed to CRM as part of readiness.

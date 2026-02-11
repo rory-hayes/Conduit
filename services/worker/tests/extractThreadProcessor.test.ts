@@ -58,7 +58,7 @@ describe('extractThread processor', () => {
       }
     });
 
-    expect(enqueueCalls).toHaveLength(2);
+    expect(enqueueCalls).toHaveLength(3);
     expect(audits[audits.length - 1].type).toBe('policy.sync_enqueued');
   });
 

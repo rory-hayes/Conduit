@@ -5,7 +5,8 @@ const chain = {
   order: vi.fn().mockReturnThis(),
   limit: vi.fn().mockResolvedValue({ data: [] }),
   eq: vi.fn().mockReturnThis(),
-  in: vi.fn().mockReturnThis()
+  in: vi.fn().mockReturnThis(),
+  maybeSingle: vi.fn().mockResolvedValue({ data: null })
 };
 
 vi.mock('@supabase/supabase-js', () => ({
@@ -14,7 +15,7 @@ vi.mock('@supabase/supabase-js', () => ({
   })
 }));
 
-const { formatConfidence, getTodayThreads, getOpenReviewItems, getThreadDetail } = await import(
+const { formatConfidence, getTodayThreads, getOpenReviewItems, getThreadDetail, suggestDealQuestions } = await import(
   '../src/lib/queries'
 );
 
@@ -29,9 +30,26 @@ describe('queries lib helpers', () => {
     expect(reviews).toEqual([]);
   });
 
+  it('maps missing keys to ordered questions', () => {
+    expect(suggestDealQuestions(['timeline', 'budget'])).toEqual([
+      'Do you have a budget range allocated for this?',
+      'When do you need this live?'
+    ]);
+  });
+
   it('returns detail object shape with empty fallbacks', async () => {
     chain.eq.mockReturnValue({ data: [] });
     const detail = await getThreadDetail('t1');
-    expect(detail).toEqual({ messages: [], fields: [], reviewItems: [], crmLog: [] });
+    expect(detail).toEqual({
+      messages: [],
+      fields: [],
+      reviewItems: [],
+      crmLog: [],
+      threadLink: null,
+      deal: null,
+      dealReadiness: null,
+      dealFacts: [],
+      needsLinkingCandidates: []
+    });
   });
 });

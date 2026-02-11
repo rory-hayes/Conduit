@@ -1,4 +1,10 @@
-export type JobType = 'extract_thread' | 'sync_hubspot' | 'sync_salesforce' | 'weekly_digest' | 'ocr_textract';
+export type JobType =
+  | 'extract_thread'
+  | 'associate_thread'
+  | 'sync_hubspot'
+  | 'sync_salesforce'
+  | 'weekly_digest'
+  | 'ocr_textract';
 
 export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed';
 

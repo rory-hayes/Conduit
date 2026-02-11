@@ -24,3 +24,16 @@
 - CRM writes are dry-run by default and only record curated payload metadata.
 - Never log raw email bodies or attachment content to CRM logs.
 - All decisions and planned writes emit audit events (`crm_write_planned`, `crm_write_logged`, policy decisions).
+
+
+## Deal Association + Readiness Decisions (V1.1)
+- Association stays anti-noise: participant email match first, domain match second, ambiguity to review queue.
+- Candidate outcomes:
+  - `1 candidate`: auto-link thread to deal and emit `thread_auto_linked` audit event.
+  - `>1 candidates`: create `needs_deal_linking` review item + `association_candidates` open record.
+  - `0 candidates`: create `unlinked_thread` review item.
+- Readiness evaluation is internal-first (BANT v1) and task-first:
+  - updates `deal_facts` and `deal_readiness` in Conduit,
+  - proposes follow-up questions/tasks,
+  - logs planned CRM tasks in dry-run mode,
+  - avoids per-email CRM writes and raw-content propagation.

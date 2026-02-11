@@ -18,3 +18,17 @@
 
 ## RLS
 RLS is enabled on all tables. Current migration keeps policy stubs/permissive local placeholders; production must enforce workspace-scoped policies.
+
+
+## Deal Support Mode (V1.1)
+- **deals**: workspace-scoped deal/opportunity mirror (`crm`, `crm_deal_id`, `title`, `stage`, `primary_domain`, `owner_user_id`).
+- **thread_links**: one deal link per thread (`deal_id`, `link_confidence`, `link_reason`).
+- **association_candidates**: unresolved multi-candidate link options (`candidates_json`, `status`, `resolved_at`).
+- **deal_facts**: normalized BANT evidence facts (`key`, `value_json`, `confidence`, `evidence_json`).
+- **deal_readiness**: framework aggregate (`framework`, `missing_keys`, `readiness_score`, `updated_at`).
+
+### Additional indexes
+- `deals(workspace_id)`
+- `thread_links(thread_id)`
+- `association_candidates(thread_id, status)`
+- `deal_facts(deal_id)`

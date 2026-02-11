@@ -87,6 +87,8 @@ export const extractThread: JobProcessor = async ({ job }) => {
   const fields = await runExtraction(thread.text);
   await insertExtractionArtifacts({ threadId, workspaceId: thread.workspaceId, fields });
 
+  await enqueueJob(thread.workspaceId, 'associate_thread', { thread_id: threadId });
+
   const decision = evaluatePolicies(fields);
   if (decision.action === 'review') {
     await withClient(async (client) => {
@@ -114,6 +116,6 @@ export const extractThread: JobProcessor = async ({ job }) => {
     threadId,
     jobId: job.id,
     type: 'policy.sync_enqueued',
-    data: { targets: ['hubspot', 'salesforce'] }
+    data: { targets: ['associate_thread', 'hubspot', 'salesforce'] }
   });
 };
