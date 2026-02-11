@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "@conduit/shared": "workspace:*",
-    "pg": "8.11.3"
+    "pg": "8.11.3",
+    "zod": "3.22.4"
   },
   "devDependencies": {
     "@types/node": "20.11.24",

@@ -86,3 +86,12 @@ Conduit is a revenue inbox intelligence platform that ingests raw emails and att
 - CRM receives curated outcomes only: weekly summary note + optional high-signal delta updates.
 - Weekly rollups are generated per deal/week and retained internally for reporting.
 - Drift pause prevents CRM writes when extraction quality materially degrades for a known source pattern.
+
+## V1.3 AI Rollups
+- AI-generated weekly rollups are policy-gated and off by default with `use_llm_rollups=false`.
+- `llm_context_level` controls model context scope:
+  - `structured_only` (default): deal metadata, readiness deltas, curated event labels, risks, tasks.
+  - `structured_plus_snippets`: same structured context plus a capped set of short redacted snippets from high-signal messages.
+- Raw email bodies are never sent by default and never written to CRM.
+- Product anti-spam posture is unchanged: CRM receives one curated weekly note plus optional high-confidence deltas.
+- Invalid or failed AI outputs automatically fall back to deterministic weekly rollups.

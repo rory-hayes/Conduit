@@ -1,3 +1,4 @@
+import { AIRollupsToggle } from '../../components/AIRollupsToggle';
 import { getPolicySettings } from '../../lib/queries';
 
 export default async function SettingsPage() {
@@ -22,6 +23,13 @@ export default async function SettingsPage() {
           <span className="font-medium text-white">{settings.create_crm_deltas ? 'On' : 'Off'}</span>
         </label>
       </div>
+
+      <AIRollupsToggle
+        enabled={settings.use_llm_rollups}
+        contextLevel={settings.llm_context_level}
+        onEnabledChange={() => undefined}
+        onContextLevelChange={() => undefined}
+      />
     </section>
   );
 }

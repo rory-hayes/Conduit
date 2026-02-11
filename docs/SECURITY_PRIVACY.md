@@ -24,3 +24,11 @@
 - Retention windows.
 - Drift pause toggles.
 - Review queue SLAs.
+
+## LLM Data Minimization
+- Default mode is `structured_only`; this excludes raw message text and attachment content.
+- Optional `structured_plus_snippets` mode is explicit policy opt-in and only sends capped, short snippets.
+- Snippet redaction removes direct phone numbers and masks email local-parts (`***@domain.tld`).
+- Only high-signal snippet classes (pricing request, objection, legal) are eligible for snippet context.
+- LLM run inputs/outputs are retained in `llm_runs` for auditability and incident response, with prompt hash and validation status.
+- CRM remains curated-outcomes only; no raw email payloads are copied to CRM logs or notes.
